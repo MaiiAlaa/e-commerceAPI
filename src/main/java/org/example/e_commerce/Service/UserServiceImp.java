@@ -5,6 +5,7 @@ import org.example.e_commerce.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,17 +15,19 @@ import java.util.Optional;
 public class UserServiceImp implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserServiceImp(UserRepository userRepository) {
+    public UserServiceImp(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public User saveUser(User user) {
         try {
             // Hash password before saving
-            user.setPasswordHash(hashPassword(user.getPasswordHash()));
+            user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
             return userRepository.save(user);
         } catch (DataIntegrityViolationException e) {
             System.err.println("Data integrity violation: " + e.getMessage());
@@ -33,11 +36,6 @@ public class UserServiceImp implements UserService {
             e.printStackTrace();
             throw new RuntimeException("Error saving user: " + e.getMessage(), e);
         }
-    }
-
-    private String hashPassword(String password) {
-        // Implement your password hashing logic here
-        return new BCryptPasswordEncoder().encode(password);
     }
 
     @Override
@@ -67,7 +65,7 @@ public class UserServiceImp implements UserService {
                 user.setUserid(userid); // Use correct method name
                 // Optionally hash the password if it's updated
                 if (user.getPasswordHash() != null) {
-                    user.setPasswordHash(hashPassword(user.getPasswordHash()));
+                    user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
                 }
                 return userRepository.save(user);
             }
@@ -94,7 +92,7 @@ public class UserServiceImp implements UserService {
         Optional<User> user = userRepository.findByUsername(username);
         if (user.isPresent()) {
             // Compare the hashed password
-            return new BCryptPasswordEncoder().matches(password, user.get().getPasswordHash());
+            return passwordEncoder.matches(password, user.get().getPasswordHash());
         }
         return false;
     }
