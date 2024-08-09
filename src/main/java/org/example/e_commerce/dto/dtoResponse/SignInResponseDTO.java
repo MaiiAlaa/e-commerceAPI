@@ -2,7 +2,7 @@ package org.example.e_commerce.dto.dtoResponse;
 
 public class SignInResponseDTO {
     private String message;
-    private String token; // Optional if using JWT
+    private String token; // This should be set correctly
 
     public String getMessage() {
         return message;
@@ -20,3 +20,4 @@ public class SignInResponseDTO {
         this.token = token;
     }
 }
+

@@ -1,17 +1,18 @@
 package org.example.e_commerce.Controller;
 
+import jakarta.validation.Valid;
 import org.example.e_commerce.Entity.User;
 import org.example.e_commerce.Service.UserServiceImp;
-import org.example.e_commerce.dto.dtoRequest.SignUpRequestDTO;
 import org.example.e_commerce.dto.dtoRequest.SignInRequestDTO;
-import org.example.e_commerce.dto.dtoResponse.SignUpResponseDTO;
+import org.example.e_commerce.dto.dtoRequest.SignUpRequestDTO;
 import org.example.e_commerce.dto.dtoResponse.SignInResponseDTO;
+import org.example.e_commerce.dto.dtoResponse.SignUpResponseDTO;
+import org.example.e_commerce.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +23,9 @@ public class UserController {
     @Autowired
     private UserServiceImp userServiceImp;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
     @PostMapping("/signup")
     public ResponseEntity<SignUpResponseDTO> signUp(@Valid @RequestBody SignUpRequestDTO signUpRequestDTO) {
         try {
@@ -30,11 +34,11 @@ public class UserController {
             user.setLastName(signUpRequestDTO.getLastname());
             user.setUsername(signUpRequestDTO.getUsername());
             user.setEmail(signUpRequestDTO.getEmail());
-            user.setPasswordHash(signUpRequestDTO.getPassword()); // Hash the password in service
+            user.setPasswordHash(signUpRequestDTO.getPassword()); // Password is hashed in the service
             User savedUser = userServiceImp.saveUser(user);
 
             SignUpResponseDTO response = new SignUpResponseDTO();
-            response.setUserId(savedUser.getUserid()); // Ensure this matches the field name
+            response.setUserId(savedUser.getUserid());
             response.setMessage("User registered successfully");
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (Exception e) {
@@ -51,8 +55,16 @@ public class UserController {
             boolean isAuthenticated = userServiceImp.authenticateUser(signInRequestDTO.getUsername(), signInRequestDTO.getPassword());
             SignInResponseDTO response = new SignInResponseDTO();
             if (isAuthenticated) {
+                // Generate token
+                String token = jwtUtil.generateToken(signInRequestDTO.getUsername());
+
+                // Log the token (optional, for debugging)
+                System.out.println("Generated Token: " + token);
+
+                // Set the token in the response
                 response.setMessage("User authenticated successfully");
-                // response.setToken("your-generated-token"); // Optional: Set token if using JWT
+                response.setToken(token);
+
                 return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 response.setMessage("Invalid username or password");
@@ -65,7 +77,7 @@ public class UserController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
+    
     @GetMapping("/users/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         try {

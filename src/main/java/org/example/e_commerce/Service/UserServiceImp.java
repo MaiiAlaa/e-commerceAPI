@@ -4,7 +4,6 @@ import org.example.e_commerce.Entity.User;
 import org.example.e_commerce.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -62,7 +61,7 @@ public class UserServiceImp implements UserService {
     public User updateUser(long userid, User user) {
         try {
             if (userRepository.existsById(userid)) {
-                user.setUserid(userid); // Use correct method name
+                user.setUserid(userid);
                 // Optionally hash the password if it's updated
                 if (user.getPasswordHash() != null) {
                     user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
@@ -88,11 +87,10 @@ public class UserServiceImp implements UserService {
 
     @Override
     public boolean authenticateUser(String username, String password) {
-        // Implement authentication logic, e.g., by comparing password hashes
-        Optional<User> user = userRepository.findByUsername(username);
-        if (user.isPresent()) {
-            // Compare the hashed password
-            return passwordEncoder.matches(password, user.get().getPasswordHash());
+        Optional<User> optionalUser = userRepository.findByUsername(username);
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            return passwordEncoder.matches(password, user.getPasswordHash());
         }
         return false;
     }
